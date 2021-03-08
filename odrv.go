@@ -13,14 +13,16 @@ import (
 
 func main() {
 	var port = getEnv("PORT", "8080")
+	var path1 = getEnv("PATH1", "/query")
+	var path2 = getEnv("PATH2", "/resolve")
 
-	//http.HandleFunc("/", indexHandler)
-	//http.HandleFunc("/query", queryHandler)
-	http.HandleFunc("/resolve", resolveHandler)
+	fmt.Printf("Listening on port %s\n", port)
+	fmt.Printf("Open http://localhost:%s in the browser\n", port)
 
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc(path1, queryHandler)
+	http.HandleFunc(path2, resolveHandler)
 
-	log.Printf("Listening on port %s", port)
-	log.Printf("Open http://localhost:%s in the browser", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
 
@@ -33,9 +35,14 @@ func getEnv(envName string, envDef string) string {
 	return env
 }
 
-func coreFunc(w http.ResponseWriter, r *http.Request, path string) {
+func coreFunc(w http.ResponseWriter, r *http.Request, upPath string) {
 
 	var upstream = getEnv("UPSTREAM", "dns.google")
+
+	var dns_query = upPath
+	if  upPath == ""{
+		dns_query = "/dns-query"
+	}
 
 	if r.Method == "HEAD" {
 		w.WriteHeader(http.StatusOK)
@@ -50,7 +57,7 @@ func coreFunc(w http.ResponseWriter, r *http.Request, path string) {
 	var url url.URL
 	url.Scheme = "https"
 	url.Host = upstream
-	url.Path = path
+	url.Path = dns_query
 	url.RawQuery = rForm + rPostForm
 
 	req := http.Request{
